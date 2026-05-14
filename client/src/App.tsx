@@ -6,6 +6,7 @@ import { UngroupedCanvas } from "./components/UngroupedCanvas";
 import { UnsubscribeModal } from "./components/UnsubscribeModal";
 import { Sidebar } from "./components/Sidebar";
 import { SelectionBar } from "./components/SelectionBar";
+import { HistoryModal } from "./components/HistoryModal";
 import { setDragChannelIds } from "./dnd";
 
 const ACTIVE_BUCKET_KEY = "ysc.activeBucketId";
@@ -17,6 +18,7 @@ export function App() {
   const [syncing, setSyncing] = useState(false);
   const [search, setSearch] = useState("");
   const [unsubBucketId, setUnsubBucketId] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [activeBucketId, setActiveBucketIdState] = useState<number | null>(() => {
@@ -268,6 +270,7 @@ export function App() {
           onUnsubscribeBucket={(id) => setUnsubBucketId(id)}
           onMoveMany={applyMove}
           onRemoveChannel={(id) => applyMove([id], null)}
+          onShowHistory={() => setHistoryOpen(true)}
         />
       </div>
 
@@ -288,6 +291,8 @@ export function App() {
           }}
         />
       )}
+
+      {historyOpen && <HistoryModal onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }

@@ -76,8 +76,8 @@ unsubscribeRouter.post("/:id/execute", async (req, res) => {
      WHERE channel_id = ?`
   );
   const logInsert = db.prepare(
-    `INSERT INTO unsubscribe_log (channel_id, channel_title_snapshot, bucket_name_snapshot, attempted_at, result)
-     VALUES (?, ?, ?, ?, ?)`
+    `INSERT INTO unsubscribe_log (channel_id, channel_title_snapshot, bucket_name_snapshot, attempted_at, result, error_message)
+     VALUES (?, ?, ?, ?, ?, ?)`
   );
 
   let success = 0;
@@ -91,11 +91,13 @@ unsubscribeRouter.post("/:id/execute", async (req, res) => {
   for (const ch of channels) {
     if (aborted) break;
     if (quotaRemainingEstimate() < QUOTA_COST.subscriptionsDelete) {
+      const msg = "Daily quota budget exhausted. Try again tomorrow.";
+      logInsert.run(ch.channel_id, ch.title, bucket.name, Date.now(), "error", msg);
       send({
         channel_id: ch.channel_id,
         title: ch.title,
         result: "error",
-        error: "Daily quota budget exhausted. Try again tomorrow.",
+        error: msg,
       });
       errors++;
       break;
@@ -108,12 +110,12 @@ unsubscribeRouter.post("/:id/execute", async (req, res) => {
     const now = Date.now();
     if (outcome === "success" || outcome === "stale_404") {
       markUnsub.run(now, ch.channel_id);
-      logInsert.run(ch.channel_id, ch.title, bucket.name, now, outcome);
+      logInsert.run(ch.channel_id, ch.title, bucket.name, now, outcome, null);
       if (outcome === "success") success++;
       else stale++;
       send({ channel_id: ch.channel_id, title: ch.title, result: outcome });
     } else {
-      logInsert.run(ch.channel_id, ch.title, bucket.name, now, "error");
+      logInsert.run(ch.channel_id, ch.title, bucket.name, now, "error", error ?? null);
       errors++;
       send({ channel_id: ch.channel_id, title: ch.title, result: "error", error });
     }

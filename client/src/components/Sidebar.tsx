@@ -12,6 +12,7 @@ interface Props {
   onUnsubscribeBucket: (id: number) => void;
   onMoveMany: (channelIds: string[], bucketId: number | null) => void;
   onRemoveChannel: (channelId: string) => void;
+  onShowHistory: () => void;
 }
 
 export function Sidebar({
@@ -25,6 +26,7 @@ export function Sidebar({
   onUnsubscribeBucket,
   onMoveMany,
   onRemoveChannel,
+  onShowHistory,
 }: Props) {
   return (
     <aside className="sidebar">
@@ -56,6 +58,8 @@ export function Sidebar({
           <a href="/api/export/all.csv" download>Export all (CSV)</a>
           <span className="muted"> · </span>
           <a href="/api/export/all.json" download>Export all (JSON)</a>
+          <span className="muted"> · </span>
+          <button className="linklike" onClick={onShowHistory}>View history</button>
         </div>
         <div className="tip">
           Tip: click a tile to select. Shift-click for ranges. Cmd-click to send to active bucket.

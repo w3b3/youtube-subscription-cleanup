@@ -47,4 +47,12 @@ export function runMigrations(db: Database.Database) {
       value TEXT NOT NULL
     );
   `);
+
+  // Additive migrations for existing databases.
+  const cols = db
+    .prepare("PRAGMA table_info(unsubscribe_log)")
+    .all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === "error_message")) {
+    db.exec("ALTER TABLE unsubscribe_log ADD COLUMN error_message TEXT");
+  }
 }
