@@ -185,7 +185,24 @@ input[type="search"], input[type="text"], select {
   border-bottom: 1px solid var(--border);
 }
 .sidebar-body { flex: 1; overflow: auto; padding: 8px; }
-.sidebar-footer { padding: 8px 12px; border-top: 1px solid var(--border); }
+.sidebar-footer { padding: 8px 12px; border-top: 1px solid var(--border); font-size: 12px; }
+.sidebar-footer .export-links { margin-bottom: 6px; }
+.sidebar-footer .export-links a { color: var(--accent); text-decoration: none; }
+.sidebar-footer .export-links a:hover { text-decoration: underline; }
+.sidebar-footer .tip { color: var(--muted); }
+
+a.btn-link {
+  display: inline-block;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  text-decoration: none;
+  line-height: 1.4;
+}
+a.btn-link:hover { border-color: var(--accent); }
 
 .bucket-row {
   background: var(--panel-2);

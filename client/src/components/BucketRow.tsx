@@ -76,6 +76,14 @@ export function BucketRow({
         <button className="ghost small" onClick={onDelete}>
           Delete
         </button>
+        <a
+          className="ghost small btn-link"
+          href={`/api/export/bucket/${bucket.id}.csv`}
+          download
+          title="Download this bucket as CSV"
+        >
+          Export CSV
+        </a>
       </div>
       {expanded && (
         <ul className="bucket-row-list">
