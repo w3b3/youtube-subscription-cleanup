@@ -12,7 +12,7 @@ import { unsubscribeRouter } from "./routes/unsubscribe.js";
 import { exportRouter } from "./routes/export.js";
 import { logRouter } from "./routes/log.js";
 import { db } from "./db.js";
-import { quotaUsedToday, DAILY_QUOTA_BUDGET } from "./quota.js";
+import { quotaUsedToday, DAILY_QUOTA_BUDGET, nextPtMidnightMs } from "./quota.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -35,6 +35,8 @@ async function main() {
     res.json({
       quota_used_today: quotaUsedToday(),
       quota_budget: DAILY_QUOTA_BUDGET,
+      quota_resets_at: new Date(nextPtMidnightMs()).toISOString(),
+      server_time: new Date().toISOString(),
     });
   });
 
