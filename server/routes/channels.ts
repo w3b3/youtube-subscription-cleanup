@@ -15,6 +15,36 @@ channelsRouter.get("/", (_req, res) => {
   res.json(rows);
 });
 
+channelsRouter.post("/_bulk_move", (req, res) => {
+  const body = req.body as { channel_ids?: string[]; bucket_id?: number | null };
+  if (!Array.isArray(body.channel_ids) || body.channel_ids.length === 0) {
+    res.status(400).json({ error: "channel_ids must be a non-empty array" });
+    return;
+  }
+  if (!("bucket_id" in body)) {
+    res.status(400).json({ error: "bucket_id is required (null for ungrouped)" });
+    return;
+  }
+  if (body.bucket_id != null) {
+    const ok = db.prepare("SELECT 1 FROM bucket WHERE id = ?").get(body.bucket_id);
+    if (!ok) {
+      res.status(400).json({ error: "Bucket not found" });
+      return;
+    }
+  }
+  const stmt = db.prepare("UPDATE channel SET bucket_id = ? WHERE channel_id = ?");
+  const tx = db.transaction((ids: string[]) => {
+    let n = 0;
+    for (const id of ids) {
+      const info = stmt.run(body.bucket_id ?? null, id);
+      n += info.changes;
+    }
+    return n;
+  });
+  const moved = tx(body.channel_ids);
+  res.json({ ok: true, moved });
+});
+
 channelsRouter.patch("/:channelId", (req, res) => {
   const { channelId } = req.params;
   const body = req.body as { bucket_id?: number | null };

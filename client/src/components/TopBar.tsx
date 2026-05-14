@@ -8,6 +8,7 @@ interface Props {
   onSearch: (v: string) => void;
   onCreateBucket: () => void;
   channelTotal: number;
+  activeBucketName: string | null;
 }
 
 export function TopBar({
@@ -20,12 +21,18 @@ export function TopBar({
   onSearch,
   onCreateBucket,
   channelTotal,
+  activeBucketName,
 }: Props) {
   return (
     <div className="topbar">
       <div className="topbar-left">
         <strong>YouTube Subscription Cleanup</strong>
         <span className="muted">· {channelTotal} channels</span>
+        {activeBucketName && (
+          <span className="active-bucket-pill" title="Cmd-click a tile to send it here">
+            Active: {activeBucketName}
+          </span>
+        )}
       </div>
       <div className="topbar-mid">
         <input
