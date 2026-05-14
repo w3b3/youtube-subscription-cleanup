@@ -31,9 +31,10 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <strong>Buckets</strong>
+        <span className="sidebar-header-title">Buckets</span>
         <button onClick={onCreateBucket}>+ New</button>
       </div>
+
       <div className="sidebar-body">
         {buckets.length === 0 && (
           <div className="empty small">No buckets yet. Create one to start sorting.</div>
@@ -53,16 +54,17 @@ export function Sidebar({
           />
         ))}
       </div>
-      <div className="sidebar-footer muted small">
+
+      <div className="sidebar-footer">
         <div className="export-links">
-          <a href="/api/export/all.csv" download>Export all (CSV)</a>
-          <span className="muted"> · </span>
-          <a href="/api/export/all.json" download>Export all (JSON)</a>
-          <span className="muted"> · </span>
-          <button className="linklike" onClick={onShowHistory}>View history</button>
+          <a href="/api/export/all.csv" download>Export CSV</a>
+          <span className="sep">·</span>
+          <a href="/api/export/all.json" download>Export JSON</a>
+          <span className="sep">·</span>
+          <button className="linklike" onClick={onShowHistory}>History</button>
         </div>
         <div className="tip">
-          Tip: click a tile to select. Shift-click for ranges. Cmd-click to send to active bucket.
+          Click to select · Shift-click ranges · Cmd-click → active bucket
         </div>
       </div>
     </aside>

@@ -73,6 +73,10 @@ syncRouter.post("/", async (_req, res) => {
       total_subscribed: remote.length,
     });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? String(err) });
+    const status = err?.code === 403 || err?.response?.status === 403 ? 429 : 500;
+    const raw: string = err?.message ?? String(err);
+    // Strip HTML tags that Google embeds in quota error messages.
+    const clean = raw.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    res.status(status).json({ error: clean });
   }
 });

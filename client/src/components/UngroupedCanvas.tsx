@@ -24,13 +24,11 @@ export function UngroupedCanvas({
 }: Props) {
   const [over, setOver] = useState(false);
   const visibleSelected = channels.filter((c) => selectedIds.has(c.channel_id)).length;
+
   return (
     <section
       className={`ungrouped${over ? " drop-over" : ""}`}
-      onDragOver={(e) => {
-        onDropZoneDragOver(e);
-        setOver(true);
-      }}
+      onDragOver={(e) => { onDropZoneDragOver(e); setOver(true); }}
       onDragLeave={() => setOver(false)}
       onDrop={(e) => {
         setOver(false);
@@ -39,23 +37,25 @@ export function UngroupedCanvas({
       }}
     >
       <header>
-        <h2>Ungrouped · {channels.length}</h2>
+        <h2>
+          Ungrouped&nbsp;
+          <span className="ungrouped-count">{channels.length}</span>
+        </h2>
         <div className="ungrouped-tools">
           <button onClick={onSelectAllVisible} disabled={channels.length === 0}>
-            Select all visible
+            Select all
           </button>
-          <button
-            onClick={onClearSelection}
-            disabled={selectedIds.size === 0}
-            className="ghost"
-          >
-            Clear selection
+          <button className="ghost" onClick={onClearSelection} disabled={selectedIds.size === 0}>
+            Clear
           </button>
-          <span className="muted small">
-            {visibleSelected} selected on screen · {selectedIds.size} total
-          </span>
+          {visibleSelected > 0 && (
+            <span className="muted small">
+              {visibleSelected} on screen · {selectedIds.size} total
+            </span>
+          )}
         </div>
       </header>
+
       <div className="tile-grid">
         {channels.map((c) => (
           <ChannelTile

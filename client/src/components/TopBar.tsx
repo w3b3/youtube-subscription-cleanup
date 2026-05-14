@@ -27,15 +27,14 @@ export function TopBar({
 }: Props) {
   return (
     <div className="topbar">
-      <div className="topbar-left">
-        <strong>YouTube Subscription Cleanup</strong>
-        <span className="muted">· {channelTotal} channels</span>
-        {activeBucketName && (
-          <span className="active-bucket-pill" title="Cmd-click a tile to send it here">
-            Active: {activeBucketName}
-          </span>
-        )}
+      <div className="topbar-brand">
+        <img src="/favicon.svg" alt="" className="topbar-brand-logo" />
+        <span className="topbar-brand-name">YT Sub Cleanup</span>
+        <span className="topbar-count">{channelTotal}</span>
       </div>
+
+      <div className="topbar-divider" />
+
       <div className="topbar-mid">
         <input
           type="search"
@@ -43,16 +42,23 @@ export function TopBar({
           value={search}
           onChange={(e) => onSearch(e.target.value)}
         />
+        {activeBucketName && (
+          <span className="active-bucket-pill" title="Cmd-click a tile to send it here">
+            {activeBucketName}
+          </span>
+        )}
+        {lastSync && <span className="sync-status" title={lastSync}>{lastSync}</span>}
+      </div>
+
+      <div className="topbar-right">
         <button onClick={onCreateBucket}>+ Bucket</button>
         <button onClick={onSync} disabled={syncing}>
-          {syncing ? "Syncing…" : "Sync from YouTube"}
+          {syncing ? "Syncing…" : "Sync"}
         </button>
-        {lastSync && <span className="muted small">{lastSync}</span>}
-      </div>
-      <div className="topbar-right">
         <QuotaIndicator />
-        <span className="muted">{email}</span>
-        <button onClick={onSignOut}>Sign out</button>
+        <div className="topbar-divider" />
+        <span className="topbar-email">{email}</span>
+        <button className="ghost" onClick={onSignOut}>Sign out</button>
       </div>
     </div>
   );
