@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AuthStatus, Bucket, Channel } from "@shared/types";
 import { api } from "./api";
 import { TopBar } from "./components/TopBar";
-import { BucketColumn } from "./components/BucketColumn";
 import { UngroupedCanvas } from "./components/UngroupedCanvas";
 import { UnsubscribeModal } from "./components/UnsubscribeModal";
+import { Sidebar } from "./components/Sidebar";
+import { SelectionBar } from "./components/SelectionBar";
+import { setDragChannelIds } from "./dnd";
+
+const ACTIVE_BUCKET_KEY = "ysc.activeBucketId";
 
 export function App() {
   const [auth, setAuth] = useState<AuthStatus | null>(null);
@@ -14,6 +18,18 @@ export function App() {
   const [search, setSearch] = useState("");
   const [unsubBucketId, setUnsubBucketId] = useState<number | null>(null);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [activeBucketId, setActiveBucketIdState] = useState<number | null>(() => {
+    const raw = localStorage.getItem(ACTIVE_BUCKET_KEY);
+    return raw ? Number(raw) : null;
+  });
+  const lastSelectedRef = useRef<string | null>(null);
+
+  const setActiveBucketId = useCallback((id: number | null) => {
+    setActiveBucketIdState(id);
+    if (id == null) localStorage.removeItem(ACTIVE_BUCKET_KEY);
+    else localStorage.setItem(ACTIVE_BUCKET_KEY, String(id));
+  }, []);
 
   const refreshAll = useCallback(async () => {
     const [a, ch, bk] = await Promise.all([
@@ -30,6 +46,13 @@ export function App() {
     refreshAll();
   }, [refreshAll]);
 
+  // If the active bucket got deleted, clear it.
+  useEffect(() => {
+    if (activeBucketId != null && !buckets.some((b) => b.id === activeBucketId)) {
+      setActiveBucketId(null);
+    }
+  }, [activeBucketId, buckets, setActiveBucketId]);
+
   const doSync = useCallback(async () => {
     setSyncing(true);
     try {
@@ -45,13 +68,45 @@ export function App() {
     }
   }, [refreshAll]);
 
-  const onMoveChannel = useCallback(
-    async (channelId: string, bucketId: number | null) => {
+  const channelsByBucket = useMemo(() => {
+    const m = new Map<number, Channel[]>();
+    for (const b of buckets) m.set(b.id, []);
+    const ungrouped: Channel[] = [];
+    for (const c of channels) {
+      if (c.bucket_id != null && m.has(c.bucket_id)) m.get(c.bucket_id)!.push(c);
+      else if (c.bucket_id == null) ungrouped.push(c);
+    }
+    return { byBucket: m, ungrouped };
+  }, [channels, buckets]);
+
+  const filterFn = useCallback(
+    (c: Channel) => {
+      if (!search.trim()) return true;
+      return c.title.toLowerCase().includes(search.trim().toLowerCase());
+    },
+    [search]
+  );
+
+  const visibleUngrouped = useMemo(
+    () => channelsByBucket.ungrouped.filter(filterFn),
+    [channelsByBucket.ungrouped, filterFn]
+  );
+
+  const applyMove = useCallback(
+    async (ids: string[], bucketId: number | null) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
       setChannels((prev) =>
-        prev.map((c) => (c.channel_id === channelId ? { ...c, bucket_id: bucketId } : c))
+        prev.map((c) => (idSet.has(c.channel_id) ? { ...c, bucket_id: bucketId } : c))
       );
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.delete(id);
+        return next;
+      });
       try {
-        await api.moveChannel(channelId, bucketId);
+        if (ids.length === 1) await api.moveChannel(ids[0], bucketId);
+        else await api.bulkMove(ids, bucketId);
       } catch {
         await refreshAll();
       }
@@ -59,16 +114,68 @@ export function App() {
     [refreshAll]
   );
 
+  const onTileClick = useCallback(
+    (e: React.MouseEvent, channelId: string) => {
+      // Cmd/Ctrl+click → send straight to active bucket (single-channel shortcut).
+      if ((e.metaKey || e.ctrlKey) && activeBucketId != null) {
+        e.preventDefault();
+        applyMove([channelId], activeBucketId);
+        return;
+      }
+      // Shift+click → range select within currently visible ungrouped order.
+      if (e.shiftKey && lastSelectedRef.current) {
+        const ids = visibleUngrouped.map((c) => c.channel_id);
+        const from = ids.indexOf(lastSelectedRef.current);
+        const to = ids.indexOf(channelId);
+        if (from >= 0 && to >= 0) {
+          const [a, b] = from < to ? [from, to] : [to, from];
+          const range = ids.slice(a, b + 1);
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            for (const id of range) next.add(id);
+            return next;
+          });
+          lastSelectedRef.current = channelId;
+          return;
+        }
+      }
+      // Plain click → toggle selection.
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(channelId)) next.delete(channelId);
+        else next.add(channelId);
+        return next;
+      });
+      lastSelectedRef.current = channelId;
+    },
+    [activeBucketId, applyMove, visibleUngrouped]
+  );
+
+  // When a tile is being dragged, attach the whole selection if the dragged tile is part of it.
+  const onTileDragStart = useCallback(
+    (e: React.DragEvent, channelId: string) => {
+      const ids = selectedIds.has(channelId) ? Array.from(selectedIds) : [channelId];
+      setDragChannelIds(e, ids);
+    },
+    [selectedIds]
+  );
+
+  // Override the export so children calling onTileDragStart use the selection-aware version.
+  // (UngroupedCanvas and BucketRow components import onTileDragStart from "../dnd"; we pass it
+  // down explicitly via props on the tile component for selection-aware behaviour.)
+  // The simplest path: ChannelTile receives onDragStart prop; we pass our selection-aware one.
+
   const onCreateBucket = useCallback(async () => {
     const name = prompt("New bucket name?");
     if (!name?.trim()) return;
     try {
-      await api.createBucket(name.trim());
+      const created = await api.createBucket(name.trim());
       await refreshAll();
+      setActiveBucketId(created.id);
     } catch (err: any) {
       alert(err.message ?? String(err));
     }
-  }, [refreshAll]);
+  }, [refreshAll, setActiveBucketId]);
 
   const onRenameBucket = useCallback(
     async (id: number, currentName: string) => {
@@ -93,29 +200,7 @@ export function App() {
     [refreshAll]
   );
 
-  const channelsByBucket = useMemo(() => {
-    const m = new Map<number | "none", Channel[]>();
-    m.set("none", []);
-    for (const b of buckets) m.set(b.id, []);
-    for (const c of channels) {
-      const key = c.bucket_id ?? "none";
-      if (!m.has(key)) m.set(key, []);
-      m.get(key)!.push(c);
-    }
-    return m;
-  }, [channels, buckets]);
-
-  const filterFn = useCallback(
-    (c: Channel) => {
-      if (!search.trim()) return true;
-      return c.title.toLowerCase().includes(search.trim().toLowerCase());
-    },
-    [search]
-  );
-
-  if (auth === null) {
-    return <div className="loading">Loading…</div>;
-  }
+  if (auth === null) return <div className="loading">Loading…</div>;
 
   if (!auth.authenticated) {
     return (
@@ -133,6 +218,8 @@ export function App() {
     );
   }
 
+  const activeBucket = buckets.find((b) => b.id === activeBucketId) ?? null;
+
   return (
     <div className="app">
       <TopBar
@@ -148,27 +235,49 @@ export function App() {
         onSearch={setSearch}
         onCreateBucket={onCreateBucket}
         channelTotal={channels.length}
+        activeBucketName={activeBucket?.name ?? null}
       />
 
       <div className="board">
-        <UngroupedCanvas
-          channels={(channelsByBucket.get("none") ?? []).filter(filterFn)}
-          onMoveChannel={onMoveChannel}
-        />
-        <div className="buckets-row">
-          {buckets.map((b) => (
-            <BucketColumn
-              key={b.id}
-              bucket={b}
-              channels={(channelsByBucket.get(b.id) ?? []).filter(filterFn)}
-              onMoveChannel={onMoveChannel}
-              onRename={() => onRenameBucket(b.id, b.name)}
-              onDelete={() => onDeleteBucket(b.id, b.name)}
-              onUnsubscribeAll={() => setUnsubBucketId(b.id)}
-            />
-          ))}
+        <div className="main-pane">
+          <UngroupedCanvas
+            channels={visibleUngrouped}
+            selectedIds={selectedIds}
+            onTileClick={onTileClick}
+            onTileDragStart={onTileDragStart}
+            onMoveMany={applyMove}
+            onSelectAllVisible={() =>
+              setSelectedIds((prev) => {
+                const next = new Set(prev);
+                for (const c of visibleUngrouped) next.add(c.channel_id);
+                return next;
+              })
+            }
+            onClearSelection={() => setSelectedIds(new Set())}
+          />
         </div>
+
+        <Sidebar
+          buckets={buckets}
+          channelsByBucket={channelsByBucket.byBucket}
+          activeBucketId={activeBucketId}
+          onSetActive={setActiveBucketId}
+          onCreateBucket={onCreateBucket}
+          onRenameBucket={onRenameBucket}
+          onDeleteBucket={onDeleteBucket}
+          onUnsubscribeBucket={(id) => setUnsubBucketId(id)}
+          onMoveMany={applyMove}
+          onRemoveChannel={(id) => applyMove([id], null)}
+        />
       </div>
+
+      <SelectionBar
+        count={selectedIds.size}
+        buckets={buckets}
+        activeBucketId={activeBucketId}
+        onMoveTo={(bid) => applyMove(Array.from(selectedIds), bid)}
+        onClear={() => setSelectedIds(new Set())}
+      />
 
       {unsubBucketId != null && (
         <UnsubscribeModal

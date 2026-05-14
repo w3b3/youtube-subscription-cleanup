@@ -43,6 +43,11 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ bucket_id: bucketId }),
     }),
+  bulkMove: (channelIds: string[], bucketId: number | null) =>
+    j<{ ok: true; moved: number }>(`/api/channels/_bulk_move`, {
+      method: "POST",
+      body: JSON.stringify({ channel_ids: channelIds, bucket_id: bucketId }),
+    }),
   unsubscribePreview: (bucketId: number) =>
     j<UnsubscribePreview>(`/api/unsubscribe/${bucketId}/preview`),
 };
