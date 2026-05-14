@@ -52,7 +52,14 @@ export function Sidebar({
         ))}
       </div>
       <div className="sidebar-footer muted small">
-        Tip: click a tile to select. Shift-click for ranges. Cmd-click to send to active bucket.
+        <div className="export-links">
+          <a href="/api/export/all.csv" download>Export all (CSV)</a>
+          <span className="muted"> · </span>
+          <a href="/api/export/all.json" download>Export all (JSON)</a>
+        </div>
+        <div className="tip">
+          Tip: click a tile to select. Shift-click for ranges. Cmd-click to send to active bucket.
+        </div>
       </div>
     </aside>
   );

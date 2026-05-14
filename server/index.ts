@@ -9,6 +9,7 @@ import { syncRouter } from "./routes/sync.js";
 import { channelsRouter } from "./routes/channels.js";
 import { bucketsRouter } from "./routes/buckets.js";
 import { unsubscribeRouter } from "./routes/unsubscribe.js";
+import { exportRouter } from "./routes/export.js";
 import { db } from "./db.js";
 import { quotaUsedToday, DAILY_QUOTA_BUDGET } from "./quota.js";
 
@@ -26,6 +27,7 @@ async function main() {
   app.use("/api/channels", channelsRouter);
   app.use("/api/buckets", bucketsRouter);
   app.use("/api/unsubscribe", unsubscribeRouter);
+  app.use("/api/export", exportRouter);
 
   app.get("/api/meta", (_req, res) => {
     res.json({
