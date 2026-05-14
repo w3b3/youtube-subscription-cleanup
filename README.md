@@ -2,7 +2,25 @@
 
 A personal tool to **list, visually group, and bulk-unsubscribe** YouTube channel subscriptions on a single Google account. Not a video player. Not a feed reader. Not a mode switcher.
 
-> Status: requirements draft for a proof of concept. No implementation yet.
+> Status: POC implemented. Local web app, single user, single Google account.
+
+---
+
+## Running it
+
+Prereqs: Node 20+, npm.
+
+1. Create a Google Cloud project, enable the **YouTube Data API v3**, create an OAuth 2.0 client of type **Web application**.
+   - Authorized JavaScript origin: `http://localhost:8787`
+   - Authorized redirect URI: `http://localhost:8787/api/auth/callback`
+   - OAuth consent screen: keep in **Testing** mode and add your own email as a test user. No verification needed.
+2. `cp .env.example .env` and fill in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+3. `npm install`
+4. `npm run dev` → open <http://localhost:8787>
+5. Click "Sign in with Google" (one-time "app not verified" warning is expected — continue past it).
+6. Click "Sync from YouTube" to import subscriptions, then drag tiles into buckets and unsubscribe.
+
+The SQLite database lives at `data/app.db`. Delete it to start over.
 
 ---
 
