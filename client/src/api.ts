@@ -16,7 +16,12 @@ async function j<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   });
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`${resp.status} ${resp.statusText}: ${text}`);
+    let msg = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed?.error === "string") msg = parsed.error;
+    } catch { /* use raw text */ }
+    throw new Error(msg || `${resp.status} ${resp.statusText}`);
   }
   return (await resp.json()) as T;
 }

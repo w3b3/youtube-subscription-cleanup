@@ -29,18 +29,12 @@ export function QuotaIndicator() {
         if (!resp.ok) return;
         const data = (await resp.json()) as MetaResponse;
         if (!cancelled) setMeta(data);
-      } catch {
-        /* ignore — display will simply be stale */
-      }
+      } catch { /* stale display is fine */ }
     };
     fetchMeta();
     const poll = setInterval(fetchMeta, 60_000);
     const tick = setInterval(() => setNow(Date.now()), 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(poll);
-      clearInterval(tick);
-    };
+    return () => { cancelled = true; clearInterval(poll); clearInterval(tick); };
   }, []);
 
   if (!meta) return null;
@@ -50,28 +44,26 @@ export function QuotaIndicator() {
   const pct = Math.min(100, (used / budget) * 100);
   const resetsAt = new Date(meta.quota_resets_at).getTime();
   const remainingMs = resetsAt - now;
-  const exhausted = budget - used < 50; // one unsubscribe costs 50
+  const exhausted = budget - used < 50;
 
-  let tone: "ok" | "warn" | "exhausted" = "ok";
-  if (exhausted) tone = "exhausted";
-  else if (pct > 80) tone = "warn";
+  const tone = exhausted ? "exhausted" : pct > 80 ? "warn" : "ok";
 
   return (
     <div
       className={`quota-indicator ${tone}`}
-      title={`Daily YouTube API quota — resets at ${new Date(meta.quota_resets_at).toLocaleString()} (Pacific midnight)`}
+      title={`YouTube API quota · resets ${new Date(meta.quota_resets_at).toLocaleString()} PT`}
     >
       <div className="quota-label">
         <span>Quota</span>
-        <span className="muted small">
+        <span className="quota-nums">
           {used.toLocaleString()} / {budget.toLocaleString()}
         </span>
       </div>
       <div className="quota-bar">
         <div className="quota-fill" style={{ width: `${pct}%` }} />
       </div>
-      <div className="muted small quota-reset">
-        {exhausted ? "exhausted · " : ""}resets in {formatCountdown(remainingMs)}
+      <div className="quota-reset">
+        {exhausted ? "exhausted · " : ""}resets {formatCountdown(remainingMs)}
       </div>
     </div>
   );

@@ -60,11 +60,12 @@ export function App() {
     try {
       const result = await api.sync();
       setLastSync(
-        `Imported ${result.total_subscribed} (added ${result.added}, updated ${result.updated}, externally unsubscribed ${result.unsubscribed_externally})`
+        `Synced ${result.total_subscribed} · +${result.added} new`
       );
       await refreshAll();
     } catch (err: any) {
-      setLastSync(`Sync failed: ${err.message ?? err}`);
+      const msg: string = err?.message ?? String(err);
+      setLastSync(`Sync failed: ${msg.slice(0, 80)}${msg.length > 80 ? "…" : ""}`);
     } finally {
       setSyncing(false);
     }
@@ -207,14 +208,15 @@ export function App() {
   if (!auth.authenticated) {
     return (
       <div className="signin">
-        <h1>YouTube Subscription Cleanup</h1>
-        <p>Local tool to group and bulk-unsubscribe YouTube channels.</p>
+        <img src="/logo.svg" alt="" className="signin-logo" />
+        <h1>YT Sub Cleanup</h1>
+        <p>Group and bulk-unsubscribe YouTube channels on your account.</p>
         <a className="btn primary" href="/api/auth/start">
           Sign in with Google
         </a>
         <p className="hint">
-          The first time, Google will warn "this app isn't verified" — that's expected for a
-          personal unverified app. Continue past it.
+          Google will show an "app not verified" warning — that's expected for a personal
+          unverified app. Continue past it.
         </p>
       </div>
     );
