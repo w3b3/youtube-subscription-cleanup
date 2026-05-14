@@ -1,3 +1,5 @@
+import { QuotaIndicator } from "./QuotaIndicator";
+
 interface Props {
   email: string;
   onSignOut: () => void;
@@ -48,6 +50,7 @@ export function TopBar({
         {lastSync && <span className="muted small">{lastSync}</span>}
       </div>
       <div className="topbar-right">
+        <QuotaIndicator />
         <span className="muted">{email}</span>
         <button onClick={onSignOut}>Sign out</button>
       </div>
