@@ -57,3 +57,18 @@ export interface UnsubscribeSummary {
   stale_404: number;
   error: number;
 }
+
+export interface UnsubscribeLogEntry {
+  id: number;
+  channel_id: string;
+  channel_title_snapshot: string;
+  bucket_name_snapshot: string | null;
+  attempted_at: number;
+  result: UnsubscribeResult;
+  error_message: string | null;
+}
+
+export interface UnsubscribeLogResponse {
+  entries: UnsubscribeLogEntry[];
+  summary: Array<{ result: UnsubscribeResult; count: number }>;
+}

@@ -6,6 +6,7 @@ import type {
   UnsubscribePreview,
   UnsubscribeProgressEvent,
   UnsubscribeSummary,
+  UnsubscribeLogResponse,
 } from "@shared/types";
 
 async function j<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -50,6 +51,7 @@ export const api = {
     }),
   unsubscribePreview: (bucketId: number) =>
     j<UnsubscribePreview>(`/api/unsubscribe/${bucketId}/preview`),
+  log: (limit = 200) => j<UnsubscribeLogResponse>(`/api/log?limit=${limit}`),
 };
 
 export function unsubscribeStream(
