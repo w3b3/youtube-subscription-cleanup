@@ -14,8 +14,8 @@
   "dependencies": {
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0",
-    "googleapis": "^144.0.0"
+    "express": "^4.22.3",
+    "googleapis": "^189.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
@@ -28,6 +28,6 @@
     "react-dom": "^18.3.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
-    "vite": "^5.4.6"
+    "vite": "^8.3.5"
   }
 }
